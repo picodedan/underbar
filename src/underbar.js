@@ -179,13 +179,64 @@
 
   // Determine whether all of the elements match a truth test.
   _.every = function(collection, iterator) {
+    var result = true;
     // TIP: Try re-using reduce() here.
+    // returns true only if EVERY element in the collection evaluated by iterator is true.  if any element returns false from the iterator,  i
+    //immediately return false. 
+    // on itteration first loop checks if itterator equals accumulator defiualt value,  if true,  continue to next itteration,  if not tru set 
+    //set accumulator to false and return.  
+    if (iterator === undefined) {
+      iterator = _.identity;
+    }
+    _.each(collection, function(item) {
+      if(result === false) {
+        return;
+      } else if (typeof iterator(item) ==='boolean') {
+        result = iterator(item);
+      } else {
+        result = Boolean(iterator(item));
+      }
+    })
+    return result;
   };
+
+  /*
+  alternate deployment ^,  
+  itterate through collection,  
+    at each element  check if result is false
+    if false do not continue to loop,  return result
+    if true apply supplied iterator function,  
+      check return of iterator function, 
+        if not a boolean, 
+          compare return of iterator function to item item yielding a boolean
+          return the boolean to result
+        if boolean return to result
+  */
 
   // Determine whether any of the elements pass a truth test. If no iterator is
   // provided, provide a default one
   _.some = function(collection, iterator) {
     // TIP: There's a very clever way to re-use every() here.
+    // output is boolean
+    //input will be collection(array/object) and truth tester
+    // if any element of the collection passes truth tester function will return true.  if no element passes return false
+    // if no iterator is provided, supply  default
+    // variation of every, but reversed. 
+    var result = false;
+    if (iterator === undefined) {
+      iterator = _.identity;
+    }
+
+    _.each(collection, function(elem) {
+      if(result === true) {
+        return;
+      } else if(typeof iterator(elem) === 'boolean') {
+        result = iterator(elem);
+      } else {
+        result = Boolean(iterator(elem));  
+      };
+    });
+    return result;
   };
 
 
@@ -208,11 +259,31 @@
   //     bla: "even more stuff"
   //   }); // obj1 now contains key1, key2, key3 and bla
   _.extend = function(obj) {
+    for(var i = 0 ; i<arguments.length ; i++) {
+      _.each(arguments[i], function(value,key) {
+      obj[key] = value;
+        });
+    }
+    return obj;
   };
 
   // Like extend, but doesn't ever overwrite a key that already
   // exists in obj
   _.defaults = function(obj) {
+  // inputs,  source object, and undefined number of additional arguments that will contain parameters to add to the source object. 
+  // output cource object with any porperties that were MISSING added to it. no over writing of keys of values that already exist in source object.
+  // reduce will be really sweet here,  not comfortable yet to implement it with that YET. 
+  //since source object will be considered first in the arguments 'array' for loop should start at 1
+  // add checks to skip any parameters that exist. 
+  var argArray = arguments;
+  for(var i=1 ; i<argArray.length ; i+=1) {
+    _.each(argArray[i], function(value,key) {
+      if(obj[key] === undefined) {
+        obj[key] = value;
+      }
+    });
+  }
+  return obj;
   };
 
 
@@ -256,6 +327,42 @@
   // already computed the result for the given argument and return that value
   // instead if possible.
   _.memoize = function(func) {
+    //input a function
+    //output results of that function
+    // intent is to store the results of a given function for later recal without having to run that function in it's entirety.
+    // interesting note about the alternate name,  potetially store all the arguments within the closure scope, as an instance of once?   
+    //create closure scope variable(s) to store argument values and results
+
+    //create running scope function to return either memoized results or first time results
+    // withing running scope,  check if arguments of function have been processed before
+    //if so recall those results and return them.
+    //else compute the result of the function with it's argurments
+    //store the arguments and results for later recall
+    //return the stored results of current
+          var memoized = {}; //will create an array or arrays whose values represent the indexable values of previous arguments passed in
+     //creats and array of results from previously passed in functions
+    //var currentArgs = arguments  //needs to be the arguments of the argument which doens't seem possible,  re evaluating plan
+
+
+    return function() {
+     // var currentArgs = [];
+     // _.each(arguments,function(value) {currentArgs.push(value);});
+      //if statement needs to be able to evaluate equality between previous args stored as arrays and the current arg stored as an array.
+      // if some element of memoizedargs has the exact same value(s) as currentarg return true      
+      var args = ''
+      if(arguments.length >1) {
+        _.each(arguments, function(value) {args += ' ' +value});
+      } else {
+        args = arguments[0];
+      }
+      if(args in memoized) {
+        return memoized[args];
+      } else {
+        memoized[args] = func.apply(this,arguments);
+        return memoized[args]
+      }
+    }
+
   };
 
   // Delays a function for the given number of milliseconds, and then calls
@@ -265,6 +372,26 @@
   // parameter. For example _.delay(someFunction, 500, 'a', 'b') will
   // call someFunction('a', 'b') after 500ms
   _.delay = function(func, wait) {
+
+    //takes as input a function as first arg,  wait time in ms as second arg,
+    //and unspecified number of additional args that should be passed to the function as params
+    //output is the result of the function called after the spcified wait time.  
+
+    //capture additional items in arg array to pass on to function.
+    var params = [];
+    //argumentsat index 2+
+    _.each(arguments,function(value,key) {
+      if (key >= 2) {
+        params.push(value);
+      };
+    });
+    //wait function implementation
+    setTimeout(function() {
+      return func.apply(this,params);
+    },wait);
+    //var delayedFunc = func(params); 
+    
+    // call/return func(params)
   };
 
 
@@ -279,7 +406,29 @@
   // input array. For a tip on how to make a copy of an array, see:
   // http://mdn.io/Array.prototype.slice
   _.shuffle = function(array) {
-  };
+    //input an array, seriously that's it... 
+    // output,  the challenging part,  a new array, containing all the elements of the source,  but in a random order!
+    // .slice() will do the trick of pulling out any elements... though we will have to account for which specific elements we have pulled out
+    //and what's left to SLICE out..
+    // I think the Funnest way to pull this off would be variation on the switch style function,  but using math.Random to choose between
+    //if/else statements that specify either pop or unshift on the copy, pushing those values to a new new array
+    var startArray = array.slice();
+    var shuffled = [];
+    var ranNum = function() {
+      return Math.floor(Math.random()*10); 
+      };
+    while (shuffled.length !== array.length) {
+
+      if(ranNum() > 5) {
+        shuffled.push(startArray.pop());
+      } else {
+        shuffled.push(startArray.shift());
+      }
+    };
+    return shuffled;
+
+
+    }
 
 
   /**
